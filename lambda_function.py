@@ -2,9 +2,10 @@ import os
 import json
 import boto3
 import uuid
+import traceback
 
 from datetime import datetime, timedelta
-from yahooquery import Ticker
+from yfinance import Ticker
 
 kinesis_client = boto3.client('kinesis')
 
@@ -17,7 +18,7 @@ def lambda_handler(event, context):
 
         for symbol in symbols:
             ticker = Ticker(symbol)
-            news = ticker.news(10, datetime.now() - timedelta(minutes=20))
+            news = ticker.get_news()
             mapped_news = [kinesis_mapper(symbol, news_item) for news_item in news]
             kinesis_news_records.extend(mapped_news)
             
@@ -33,20 +34,18 @@ def lambda_handler(event, context):
 
         return True
     except Exception as e:
+        traceback.print_exc()
         return str(e)
     
 def kinesis_mapper(symbol, news):
     collection_time_str = datetime.now().isoformat()
-    trimmed_summary = ' '.join(news['summary'].split()[:250])
 
     data = {
         'symbol': symbol,
         'collection_time': collection_time_str,
         'title': news['title'],
-        'summary': trimmed_summary,
-        'url': news['url'],
-        'author_name': news['author_name'],
-        'provider_name': news['provider_name']
+        'link': news['link'],
+        'publisher': news['publisher']
     }
 
     return {
