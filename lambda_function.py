@@ -31,7 +31,7 @@ def get_stock_news():
             mapped_news = [kinesis_mapper(symbol, news_item) for news_item in news_last_day]
             kinesis_news_records.extend(mapped_news)
 
-        logger.info("INFO: Stock news retrieved from yfinance successfully.")
+        logger.info("SUCCESS: Stock news retrieved from yfinance.")
 
         return kinesis_news_records
     except Exception as e:
@@ -53,6 +53,8 @@ def lambda_handler(event, context):
               StreamName=os.environ.get('KINESIS_STREAM_NAME'),
               StreamARN=os.environ.get('KINESIS_STREAM_ARN')
           )
+
+        logger.info("SUCCESS: Stock news records added to Kinesis.")
 
         return True
     except Exception as e:
