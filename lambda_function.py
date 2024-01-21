@@ -11,15 +11,18 @@ kinesis_client = boto3.client('kinesis')
 
 def lambda_handler(event, context):
     try:
-        # data = json.loads(event['body'])
-
         symbols = os.environ.get('STOCK_SYMBOLS').split(",")
         kinesis_news_records = []
 
         for symbol in symbols:
             ticker = Ticker(symbol)
             news = ticker.get_news()
-            mapped_news = [kinesis_mapper(symbol, news_item) for news_item in news]
+
+            twenty_four_hours_ago = datetime.now() - timedelta(hours=12)
+            timestamp_threshold = int(twenty_four_hours_ago.timestamp())
+            news_last_day = [story for story in news if story['providerPublishTime'] >= timestamp_threshold]
+
+            mapped_news = [kinesis_mapper(symbol, news_item) for news_item in news_last_day]
             kinesis_news_records.extend(mapped_news)
             
         batch_size = 10
